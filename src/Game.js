@@ -10,20 +10,24 @@ export const SlowRace = {
         let currentPlayerPositions = [0, 1, 2, 3];
         let currentRoll;
         let cellsAllowed = [];
+        let redLights = [];
 
         return {
             cells: cells,
             currentRoll: currentRoll,
             cellsAllowed: cellsAllowed,
             currentPlayerPositions: currentPlayerPositions,
+            /* redLights: [ {placedBy: 0, turnsLeft: 2, position: 11}, {placedBy: 1, turnsLeft: 1, position: 28} ], */
+            redLights: redLights,
         }
     },
 
     turn: {
         minMoves: 1,
+        onEnd: UpdateRedLights,
     },
 
-    moves: { RollDice, ChooseCell },
+    moves: { RollDice, MakeMove, ChooseCell, PlaceRedLight },
 
     endIf: (G, ctx) => {
         if (isVictory(G, ctx)) {
@@ -34,7 +38,7 @@ export const SlowRace = {
 
 // moves
 function RollDice(G, ctx) {
-    const moveCode = ctx.random.Die(4);
+    const moveCode = ctx.random.Die(5);
     G.currentRoll = moveCode;
     let cellsAllowed = [];
     switch (moveCode) {
@@ -50,13 +54,23 @@ function RollDice(G, ctx) {
         case 4:
             cellsAllowed = moveTwo(G, ctx);
             break;
+        case 5:
+            break;
         default:
             break;
     }
     G.cellsAllowed = cellsAllowed;
 }
 
-function ChooseCell (G, ctx, id) {
+function MakeMove(G, ctx, id) {
+    if (G.currentRoll == 2 || G.currentRoll == 3 || G.currentRoll == 4 ) {
+        ChooseCell(G, ctx, id);
+    } else if (G.currentRoll == 5) {
+        PlaceRedLight(G, ctx, id);
+    }
+}
+
+function ChooseCell(G, ctx, id) {
     G.cellsAllowed.forEach(e => {
         if (id == e) {
             if (G.cells[id] !== null) {
@@ -68,6 +82,19 @@ function ChooseCell (G, ctx, id) {
             ctx.events.endTurn();
         }
     });
+}
+
+function PlaceRedLight(G, ctx, id) {
+    if (G.cells[id] !== null || id == 0 || id == 1 || id == 2 || id == 3 || id == 44 || id == 45 || id == 46 || id == 47 || id == 48 || id == 49 || id == 50 || id == 51) {
+        return INVALID_MOVE;
+    }
+    const placedBy = parseInt(ctx.currentPlayer);
+    const position = parseInt(id);
+    G.redLights.push({placedBy: placedBy, turnsLeft: 3, position: position});
+    repaintCells(G);
+    G.currentRoll = undefined;
+    G.cellsAllowed = [];
+    ctx.events.endTurn();
 }
 
 // helper functions
@@ -140,12 +167,6 @@ function moveOneSide(G, ctx) {
             G.cellsAllowed = [];
             ctx.events.endTurn();
         }
-        /* 
-        +3? allowed.push(+3)
-        +5? allowed.push(+5)
-        if allowed != empty return allowed
-        else endTurn
-        */
     }
 }
 
@@ -159,6 +180,36 @@ function repaintCells(G) {
     G.cells[pos1] = 1;
     G.cells[pos2] = 2;
     G.cells[pos3] = 3;
+    
+    for (let i = 0; i < G.redLights.length; i++) {
+        const redLight = G.redLights[i];
+        
+        // generate redLightContent code. Could be function
+        let redLightContent;
+        if (redLight.turnsLeft == 3) {
+            redLightContent = '(' + redLight.placedBy + ')RRR';
+        } else if (redLight.turnsLeft == 2) {
+            redLightContent = '(' + redLight.placedBy + ')RR';
+        } else if (redLight.turnsLeft == 1) {
+            redLightContent = '(' + redLight.placedBy + ')R';
+        }
+
+        G.cells[redLight.position] = redLightContent;
+    }
+}
+
+// moves: onEnd
+function UpdateRedLights(G, ctx) {
+    for (let i = 0; i < G.redLights.length; i++) {
+        const redLight = G.redLights[i];
+        if (redLight.placedBy == ctx.currentPlayer) {
+            redLight.turnsLeft = redLight.turnsLeft - 1;
+            if (redLight.turnsLeft == 0) {
+                G.redLights.splice(i, 1);
+            }
+            repaintCells(G);
+        }
+    }
 }
 
 function isVictory(G, ctx) {
@@ -174,6 +225,7 @@ function isVictory(G, ctx) {
 3 n
 4 move 2 allowed +8
 5 n
+endTurn update all redLights
 */
 /* 
 Notes:
