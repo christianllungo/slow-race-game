@@ -1,13 +1,16 @@
 import { Client } from 'boardgame.io/client';
-import { Local } from 'boardgame.io/multiplayer';
+import { SocketIO } from 'boardgame.io/multiplayer';
 import { SlowRace } from './Game';
+
+const { protocol, hostname, port } = window.location;
+const server = `${protocol}//${hostname}:${port}`;
 
 class SlowRaceClient {
   constructor(rootElement, { playerID } = {}) {
     this.client = Client({
         game: SlowRace, 
         numPlayers: 4,
-        multiplayer: Local(),
+        multiplayer: SocketIO({ server: server }),
         playerID,
     });
     this.client.start();
@@ -63,6 +66,7 @@ class SlowRaceClient {
   }
 
   update(state) {
+    if (state === null) return;
     // board (all cells)
     const cells = this.rootElement.querySelectorAll('.cell');
     cells.forEach(cell => {
@@ -90,11 +94,11 @@ class SlowRaceClient {
 }
 
 const appElement = document.getElementById('app');
-const playerIDs = ['0', '1', '2', '3'];
+/* const playerIDs = ['0', '1', '2', '3'];
 const clients = playerIDs.map(playerID => {
     const rootElement = document.createElement('div');
     appElement.append(rootElement);
     return new SlowRaceClient(rootElement, { playerID });
-});
+}); */
 
-/* const app = new SlowRaceClient(appElement); */
+const app = new SlowRaceClient(appElement);

@@ -4,15 +4,18 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "parcel index.html --open",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node -r esm server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "node -r esm src/server.js"
   },
   "browserslist": "defaults and supports async-functions",
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "boardgame.io": "^0.49.12"
+    "boardgame.io": "^0.49.12",
+    "esm": "^3.2.25",
+    "koa-static": "^5.0.0"
   },
   "devDependencies": {
     "parcel-bundler": "^1.12.5"
